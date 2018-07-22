@@ -1,3 +1,5 @@
+import html
+
 import pandas as pd
 import xml.etree.ElementTree as etree
 
@@ -34,7 +36,7 @@ def create_xml_header():
         <PARAMS/>
     </METADATA>
     <ROWDATA>
-        '''
+'''
     return header
 
 
@@ -44,13 +46,17 @@ def create_xml_ending():
 </DATAPACKET>'''
     return ending
 
+def htmlEntities( string ):
+    return ''.join(['&#{0};'.format(ord(char)) for char in string])
 
 def to_xml(df, filename=None, mode='w'):  # todo исправить на мои выходные данные
     def row_to_xml(row):
-        date = row.TIMESTAMP.split()[0]
-        time = row.TIMESTAMP.split()[1]
-        value = row.A
-        xml = '<event date="{0}" time="{1}" value="{2}"></event>'.format(date, time, value)
+        CODE = row.CODE
+        PARENT = row.PARENT
+        NAME = htmlEntities(row.NAME)
+        CCOUNT = row.CCOUNT
+        FULLPATH = row.FULLPATH
+        xml = '    <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
         return xml
 
     res = ' '.join(df.apply(row_to_xml, axis=1))
@@ -70,10 +76,67 @@ df = pd.read_csv("goods.csv", delimiter=";", decimal=",", header=0,
 # df[u'Код группы'] = convert2int32(df[u'Код группы'])
 # print(dtypess)
 # print(df.info(memory_usage='deep'))
-print(df[df.duplicated(keep=False, subset=u'Код') == True])  # todo разобраться с дублями!!!
+
+# ищем дубли
+# print(df[df.duplicated(keep=False, subset=u'Код') == True].sort_values(by='Код'))  # todo разобраться с дублями!!!
+# print (df[u'Код'].value_counts().reset_index().query("Код > 1").rename(columns={'index':'Код', 'Код':'count'}))
+# print(df[df[u'Код'] == 1000007376].values)
+# закончили искать дубли
+
 # print(sl)
-dfGroups = df[df[u'Тип'] == u"Группа"]
-dfItems = df[df[u'Тип'] != u"Группа"]
-# print(dfItems)
-# print(create_xml_header(),create_xml_ending())
+dfGroups = df[df[u'Тип'] == u"Группа"].fillna(0)  # это выборка групп
+dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка товаров
+#print(dfGroups)
+
+# РАБОТАЕМ С ГРУППАМИ
+# todo надо добавить столбцы "CCOUNT" и "FULLPATH"
+dfGroups.drop(columns=['Тип', 'Ед.изм', 'Вес ед. изм', 'Цена', 'Категория'], inplace=True)
+dfGroups.rename(index=str, columns={"Код": "CODE","Код группы":"PARENT","Наименование":"NAME"}, inplace=True)
+dfGroups.sort_values(by=['PARENT', 'CODE'],inplace=True)
+# print(dfGroups.loc[:,['CODE','PARENT']])
+
+dfGroups.set_index('CODE', inplace=True)
+# print(dfGroups)
+dfGroupsChildCount=dfGroups.groupby("PARENT")["PARENT"].count().rename("CCOUNT").reset_index()\
+    .rename(index=str, columns = {'PARENT':'CODE'}).set_index('CODE')
+# print(dfGroupsChildCount)
+# dfGroups['count'] = dfGroups.groupby("Код группы")["Код группы"].transform(len)
+# print(dfGroups)
+dfGroupsWithCCOUNT = dfGroups.join(dfGroupsChildCount).fillna(0)
+dfGroupsWithCCOUNT["CCOUNT"] = dfGroupsWithCCOUNT["CCOUNT"].astype(int)
+print(dfGroupsWithCCOUNT)
+
+dfGroupsWithCCOUNT["FULLPATH"] = ""
+
+def getParentPath(index):
+    path = str(index) + "."
+    ParentIndex = dfGroupsWithCCOUNT.loc[index, ['PARENT']]["PARENT"]
+    if ParentIndex == 0:
+        return path
+    else:
+        ppath = getParentPath(ParentIndex)
+    return ppath + path
+
+
+# for i in range(len(dfGroupsWithCCOUNT)):
+#     print(dfGroupsWithCCOUNT[i].index.astype(str)+'.')
+
+for index, row in dfGroupsWithCCOUNT.iterrows():
+    path = getParentPath(index)
+    dfGroupsWithCCOUNT.at[index, 'FULLPATH'] = path
+    # print(path)
+
+
+dfGroupsWithCCOUNT.reset_index( inplace=True)
+pass
+#tempDF = dfGroupsWithCCOUNT.loc[:,["FULLPATH"]].apply(lambda x:  )
+#print(tempDF)
+
+#dfGroups['Код'].
+#dfGroups.loc['Код']
+#print(dfGroups)
+#print(dfGroups.loc[:,('Код','Код группы','count')])
+print(create_xml_header()+ to_xml(dfGroupsWithCCOUNT)+create_xml_ending())
+with open("SHGROUPS.XML", 'w') as f:
+    f.write(create_xml_header()+ to_xml(dfGroupsWithCCOUNT)+create_xml_ending())
 # input()
