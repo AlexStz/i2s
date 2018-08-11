@@ -66,8 +66,7 @@ def SHGROUPS_row_to_xml(df):
     return res
 
 
-def main():
-
+def readIikoCsv():
     df = pd.read_csv("./DATA/goods.csv", delimiter=";", decimal=",", header=0,
                      converters={u'Код': convert2int32, u'Код группы': convert2int32},
                      usecols=[u'Тип', u'Код', u'Код группы', u'Наименование', u'Ед.изм', u'Вес ед. изм', u'Цена',
@@ -86,9 +85,11 @@ def main():
 
     # print(sl)
     dfGroups = df[df[u'Тип'] == u"Группа"].fillna(0)  # это выборка групп
-    # dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка товаров
-    # print(dfGroups)
+    dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка товаров
+    return dfGroups, dfItems
 
+
+def workWithGroups(dfGroups):
     # РАБОТАЕМ С ГРУППАМИ
     # посмотрим на дубли кодов
     duplicates = dfGroups[dfGroups.duplicated(keep=False, subset=u'Код') == True].sort_values(by=u'Код')
@@ -148,13 +149,18 @@ def main():
     # dfGroups.loc['Код']
     # print(dfGroups)
     # print(dfGroups.loc[:,('Код','Код группы','count')])
-    print(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
-    with open("./DATA/SHGROUPS.XML", 'w') as f:
-        f.write(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
+    # print(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
+    return SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending()
     # /РАБОТАЕМ С ГРУППАМИ
-    # input()
+
+
+def main():
+    dfGroups, dfItems = readIikoCsv()
+    SHGROUPS_xml = workWithGroups(dfGroups)
+    with open("./DATA/SHGROUPS.XML", 'w') as f:
+        f.write(SHGROUPS_xml)
+    # print(dfGroups)
 
 
 if __name__ == "__main__":
-    # execute only if run as a script
     main()
