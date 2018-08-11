@@ -1,7 +1,7 @@
-import html
+#import html
 
 import pandas as pd
-import xml.etree.ElementTree as etree
+#import xml.etree.ElementTree as etree
 
 
 def convert2int32(code):
@@ -11,17 +11,22 @@ def convert2int32(code):
         tempcode = 0
     elif lencode <= 11:
         tempcode = int(code, 10)
-        if tempcode > 98000000000:
-            tempcode -= 98000000000
+        if tempcode > 99000000000:
+            tempcode -= 99000000000
     elif len(code) == 36:
-        tempcode = int(code[0:7], 16)
+        tempcode = int(code[32:], 16)
+        if tempcode > (65536/2):
+            tempcode = tempcode - (65536/2)
     else:
         print(len(code), code)
+    return int(tempcode)
 
-    return tempcode
+
+def htmlEntities(string):
+    return ''.join(['&#{0};'.format(ord(char)) for char in string])
 
 
-def create_xml_header():
+def SHGROUPS_xml_header():
     header = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DATAPACKET Version="2.0">
     <METADATA>
@@ -40,16 +45,15 @@ def create_xml_header():
     return header
 
 
-def create_xml_ending():
+def SHGROUPS_xml_ending():
     ending = '''
     </ROWDATA>
 </DATAPACKET>'''
     return ending
 
-def htmlEntities( string ):
-    return ''.join(['&#{0};'.format(ord(char)) for char in string])
 
-def to_xml(df, filename=None, mode='w'):  # todo исправить на мои выходные данные
+
+def SHGROUPS_row_to_xml(df):
     def row_to_xml(row):
         CODE = row.CODE
         PARENT = row.PARENT
@@ -60,11 +64,8 @@ def to_xml(df, filename=None, mode='w'):  # todo исправить на мои 
         return xml
 
     res = ' '.join(df.apply(row_to_xml, axis=1))
+    return res
 
-    if filename is None:
-        return res
-    with open(filename, mode) as f:
-        f.write(res)
 
 
 df = pd.read_csv("goods.csv", delimiter=";", decimal=",", header=0,
@@ -89,7 +90,11 @@ dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка това
 #print(dfGroups)
 
 # РАБОТАЕМ С ГРУППАМИ
-# todo надо добавить столбцы "CCOUNT" и "FULLPATH"
+# посмотрим на дубли кодов
+print("Посмотрим на дубли:")
+print(dfGroups[dfGroups.duplicated(keep=False, subset=u'Код') == True].sort_values(by='Код'))  # todo разобраться с дублями!!!
+print("...дубли закончились.")
+# /
 dfGroups.drop(columns=['Тип', 'Ед.изм', 'Вес ед. изм', 'Цена', 'Категория'], inplace=True)
 dfGroups.rename(index=str, columns={"Код": "CODE","Код группы":"PARENT","Наименование":"NAME"}, inplace=True)
 dfGroups.sort_values(by=['PARENT', 'CODE'],inplace=True)
@@ -104,7 +109,7 @@ dfGroupsChildCount=dfGroups.groupby("PARENT")["PARENT"].count().rename("CCOUNT")
 # print(dfGroups)
 dfGroupsWithCCOUNT = dfGroups.join(dfGroupsChildCount).fillna(0)
 dfGroupsWithCCOUNT["CCOUNT"] = dfGroupsWithCCOUNT["CCOUNT"].astype(int)
-print(dfGroupsWithCCOUNT)
+#print(dfGroupsWithCCOUNT)
 
 dfGroupsWithCCOUNT["FULLPATH"] = ""
 
@@ -127,8 +132,7 @@ for index, row in dfGroupsWithCCOUNT.iterrows():
     # print(path)
 
 
-dfGroupsWithCCOUNT.reset_index( inplace=True)
-pass
+dfGroupsWithCCOUNT.reset_index(inplace=True)
 #tempDF = dfGroupsWithCCOUNT.loc[:,["FULLPATH"]].apply(lambda x:  )
 #print(tempDF)
 
@@ -136,7 +140,8 @@ pass
 #dfGroups.loc['Код']
 #print(dfGroups)
 #print(dfGroups.loc[:,('Код','Код группы','count')])
-print(create_xml_header()+ to_xml(dfGroupsWithCCOUNT)+create_xml_ending())
+print(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
 with open("SHGROUPS.XML", 'w') as f:
-    f.write(create_xml_header()+ to_xml(dfGroupsWithCCOUNT)+create_xml_ending())
+    f.write(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
+# /РАБОТАЕМ С ГРУППАМИ
 # input()
