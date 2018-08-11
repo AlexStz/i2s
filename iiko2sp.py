@@ -26,46 +26,6 @@ def htmlEntities(string):
     return ''.join(['&#{0};'.format(ord(char)) for char in string])
 
 
-def SHGROUPS_xml_header():
-    header = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DATAPACKET Version="2.0">
-    <METADATA>
-        <FIELDS>
-            <FIELD attrname="CODE" fieldtype="i4"/>
-            <FIELD attrname="PARENT" fieldtype="i4"/>
-            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="100"/>
-            <FIELD attrname="CCOUNT" fieldtype="i4"/>
-            <FIELD attrname="FULLPATH" fieldtype="string.uni" WIDTH="16382"/>
-            <FIELD attrname="EXTRA" fieldtype="fixed" DECIMALS="3" WIDTH="32"/>
-        </FIELDS>
-        <PARAMS/>
-    </METADATA>
-    <ROWDATA>
-'''
-    return header
-
-
-def SHGROUPS_xml_ending():
-    ending = '''
-    </ROWDATA>
-</DATAPACKET>'''
-    return ending
-
-
-def SHGROUPS_row_to_xml(df):
-    def row_to_xml(row):
-        CODE = row.CODE
-        PARENT = row.PARENT
-        NAME = htmlEntities(row.NAME)
-        CCOUNT = row.CCOUNT
-        FULLPATH = row.FULLPATH
-        xml = '    <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
-        return xml
-
-    res = ' '.join(df.apply(row_to_xml, axis=1))
-    return res
-
-
 def readIikoCsv():
     df = pd.read_csv("./DATA/goods.csv", delimiter=";", decimal=",", header=0,
                      converters={u'Код': convert2int32, u'Код группы': convert2int32},
@@ -77,12 +37,6 @@ def readIikoCsv():
     # print(dtypess)
     # print(df.info(memory_usage='deep'))
 
-    # ищем дубли
-    # print(df[df.duplicated(keep=False, subset=u'Код') == True].sort_values(by='Код'))  # todo разобраться с дублями!!!
-    # print (df[u'Код'].value_counts().reset_index().query("Код > 1").rename(columns={'index':'Код', 'Код':'count'}))
-    # print(df[df[u'Код'] == 1000007376].values)
-    # закончили искать дубли
-
     # print(sl)
     dfGroups = df[df[u'Тип'] == u"Группа"].fillna(0)  # это выборка групп
     dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка товаров
@@ -90,12 +44,40 @@ def readIikoCsv():
 
 
 def workWithGroups(dfGroups):
+    def SHGROUPS_xml_header():
+        header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<DATAPACKET Version="2.0">\n    <METADATA>\n        <FIELDS>\n'
+        '            <FIELD attrname="CODE" fieldtype="i4"/>\n'
+        '            <FIELD attrname="PARENT" fieldtype="i4"/>\n'
+        '            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="100"/>\n'
+        '            <FIELD attrname="CCOUNT" fieldtype="i4"/>'
+        '            <FIELD attrname="FULLPATH" fieldtype="string.uni" WIDTH="16382"/>'
+        '            <FIELD attrname="EXTRA" fieldtype="fixed" DECIMALS="3" WIDTH="32"/>'
+        '        </FIELDS>\n        <PARAMS/>\n    </METADATA>\n    <ROWDATA>\n'
+        return header
+
+    def SHGROUPS_xml_ending():
+        ending = '    </ROWDATA>\n</DATAPACKET>'
+        return ending
+
+    def SHGROUPS_row_to_xml(df):
+        def row_to_xml(row):
+            CODE = row.CODE
+            PARENT = row.PARENT
+            NAME = htmlEntities(row.NAME)
+            CCOUNT = row.CCOUNT
+            FULLPATH = row.FULLPATH
+            xml = '    <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
+            return xml
+
+        res = ' '.join(df.apply(row_to_xml, axis=1))
+        return res
     # РАБОТАЕМ С ГРУППАМИ
     # посмотрим на дубли кодов
     duplicates = dfGroups[dfGroups.duplicated(keep=False, subset=u'Код') == True].sort_values(by=u'Код')
     if len(duplicates) is not 0:
         print("Посмотрим на дубли:")
-        print(duplicates)  # todo разобраться с дублями!!!
+        print(duplicates)
         print("...дубли закончились. Выход.")
         exit
     # /
@@ -121,7 +103,7 @@ def workWithGroups(dfGroups):
     # for i in range(len(dfGroupsWithCCOUNT)):
     #     print(dfGroupsWithCCOUNT[i].index.astype(str)+'.')
 
-    def getParentPath(index):
+    def getParentPath(index):  # а здесь у нас рекурсия ;)
         path = str(index) + "."
         ParentIndex = dfGroupsWithCCOUNT.loc[index, ['PARENT']]["PARENT"]
         if ParentIndex == 0:
@@ -154,9 +136,44 @@ def workWithGroups(dfGroups):
     # /РАБОТАЕМ С ГРУППАМИ
 
 
+def workWithItems(dfItems):
+    def GOODS_xml_header():
+        header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<DATAPACKET Version="2.0">\n    <METADATA>\n        <FIELDS>\n'
+        '            <FIELD attrname="CODE" fieldtype="i4"/>\n'
+        '            <FIELD attrname="PARENT" fieldtype="i4"/>\n'
+        '            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="100"/>\n'
+        '            <FIELD attrname="CCOUNT" fieldtype="i4"/>'
+        '            <FIELD attrname="FULLPATH" fieldtype="string.uni" WIDTH="16382"/>'
+        '            <FIELD attrname="EXTRA" fieldtype="fixed" DECIMALS="3" WIDTH="32"/>'
+        '        </FIELDS>\n        <PARAMS/>\n    </METADATA>\n    <ROWDATA>\n'
+        return header
+
+    def GOODS_xml_ending():
+        ending = '    </ROWDATA>\n</DATAPACKET>'
+        return ending
+
+    def GOODS_row_to_xml(df):
+        def row_to_xml(row):
+            CODE = row.CODE
+            PARENT = row.PARENT
+            NAME = htmlEntities(row.NAME)
+            CCOUNT = row.CCOUNT
+            FULLPATH = row.FULLPATH
+            xml = '    <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
+            return xml
+
+        res = ' '.join(df.apply(row_to_xml, axis=1))
+        return res
+
+    return 0
+
+
 def main():
     dfGroups, dfItems = readIikoCsv()
     SHGROUPS_xml = workWithGroups(dfGroups)
+    GOODS_xml = workWithItems(dfItems)
+
     with open("./DATA/SHGROUPS.XML", 'w') as f:
         f.write(SHGROUPS_xml)
     # print(dfGroups)
