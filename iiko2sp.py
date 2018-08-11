@@ -99,9 +99,6 @@ if len(duplicates) is not 0:
 dfGroups.drop(columns=['Тип', 'Ед.изм', 'Вес ед. изм', 'Цена', 'Категория'], inplace=True)
 dfGroups.rename(index=str, columns={"Код": "CODE", "Код группы": "PARENT", "Наименование": "NAME"}, inplace=True)
 
-# сортируем
-dfGroups.sort_values(by=['PARENT', 'CODE'], inplace=True)  # TODO здесь проблемка - буду думать
-# /
 # print(dfGroups.loc[:,['CODE','PARENT']])
 
 dfGroups.set_index('CODE', inplace=True)
@@ -115,6 +112,7 @@ dfGroupsWithCCOUNT = dfGroups.join(dfGroupsChildCount).fillna(0)
 dfGroupsWithCCOUNT["CCOUNT"] = dfGroupsWithCCOUNT["CCOUNT"].astype(int)
 # print(dfGroupsWithCCOUNT)
 
+# заполняем FULLPATH
 dfGroupsWithCCOUNT["FULLPATH"] = ""
 
 
@@ -140,6 +138,12 @@ for index, row in dfGroupsWithCCOUNT.iterrows():
 dfGroupsWithCCOUNT.reset_index(inplace=True)
 # tempDF = dfGroupsWithCCOUNT.loc[:,["FULLPATH"]].apply(lambda x:  )
 # print(tempDF)
+# /
+
+# сортируем
+# print(dfGroupsWithCCOUNT.sort_values(by=['FULLPATH']))
+dfGroupsWithCCOUNT.sort_values(by=['FULLPATH'], inplace=True)  # TODO здесь проблемка - буду думать
+# /
 
 # dfGroups['Код'].
 # dfGroups.loc['Код']
