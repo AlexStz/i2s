@@ -66,7 +66,7 @@ def SHGROUPS_row_to_xml(df):
     return res
 
 
-df = pd.read_csv("goods.csv", delimiter=";", decimal=",", header=0,
+df = pd.read_csv("./DATA/goods.csv", delimiter=";", decimal=",", header=0,
                  converters={u'Код': convert2int32, u'Код группы': convert2int32},
                  usecols=[u'Тип', u'Код', u'Код группы', u'Наименование', u'Ед.изм', u'Вес ед. изм', u'Цена',
                           u'Категория'])
@@ -89,13 +89,19 @@ dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка това
 
 # РАБОТАЕМ С ГРУППАМИ
 # посмотрим на дубли кодов
-print("Посмотрим на дубли:")
-print(dfGroups[dfGroups.duplicated(keep=False, subset=u'Код') is True].sort_values(by='Код'))  # todo разобраться с дублями!!!
-print("...дубли закончились.")
+duplicates = dfGroups[dfGroups.duplicated(keep=False, subset=u'Код') == True].sort_values(by=u'Код')
+if len(duplicates) is not 0:
+    print("Посмотрим на дубли:")
+    print(duplicates)  # todo разобраться с дублями!!!
+    print("...дубли закончились. Выход.")
+    exit
 # /
 dfGroups.drop(columns=['Тип', 'Ед.изм', 'Вес ед. изм', 'Цена', 'Категория'], inplace=True)
 dfGroups.rename(index=str, columns={"Код": "CODE", "Код группы": "PARENT", "Наименование": "NAME"}, inplace=True)
-dfGroups.sort_values(by=['PARENT', 'CODE'], inplace=True)
+
+# сортируем
+dfGroups.sort_values(by=['PARENT', 'CODE'], inplace=True)  # TODO здесь проблемка - буду думать
+# /
 # print(dfGroups.loc[:,['CODE','PARENT']])
 
 dfGroups.set_index('CODE', inplace=True)
@@ -140,7 +146,7 @@ dfGroupsWithCCOUNT.reset_index(inplace=True)
 # print(dfGroups)
 # print(dfGroups.loc[:,('Код','Код группы','count')])
 print(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
-with open("SHGROUPS.XML", 'w') as f:
+with open("./DATA/SHGROUPS.XML", 'w') as f:
     f.write(SHGROUPS_xml_header() + SHGROUPS_row_to_xml(dfGroupsWithCCOUNT) + SHGROUPS_xml_ending())
 # /РАБОТАЕМ С ГРУППАМИ
 # input()
