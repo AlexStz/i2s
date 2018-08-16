@@ -45,15 +45,15 @@ def readIikoCsv():
 
 def workWithGroups(dfGroups):
     def SHGROUPS_xml_header():
-        header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-        '<DATAPACKET Version="2.0">\n    <METADATA>\n        <FIELDS>\n'
-        '            <FIELD attrname="CODE" fieldtype="i4"/>\n'
-        '            <FIELD attrname="PARENT" fieldtype="i4"/>\n'
-        '            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="100"/>\n'
-        '            <FIELD attrname="CCOUNT" fieldtype="i4"/>'
-        '            <FIELD attrname="FULLPATH" fieldtype="string.uni" WIDTH="16382"/>'
-        '            <FIELD attrname="EXTRA" fieldtype="fixed" DECIMALS="3" WIDTH="32"/>'
-        '        </FIELDS>\n        <PARAMS/>\n    </METADATA>\n    <ROWDATA>\n'
+        header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' \
+            '<DATAPACKET Version="2.0">\n    <METADATA>\n        <FIELDS>\n' \
+            '            <FIELD attrname="CODE" fieldtype="i4"/>\n' \
+            '            <FIELD attrname="PARENT" fieldtype="i4"/>\n' \
+            '            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="100"/>\n' \
+            '            <FIELD attrname="CCOUNT" fieldtype="i4"/> \n' \
+            '            <FIELD attrname="FULLPATH" fieldtype="string.uni" WIDTH="16382"/>\n' \
+            '            <FIELD attrname="EXTRA" fieldtype="fixed" DECIMALS="3" WIDTH="32"/>\n' \
+            '        </FIELDS>\n        <PARAMS/>\n    </METADATA>\n    <ROWDATA>\n'
         return header
 
     def SHGROUPS_xml_ending():
@@ -67,10 +67,10 @@ def workWithGroups(dfGroups):
             NAME = htmlEntities(row.NAME)
             CCOUNT = row.CCOUNT
             FULLPATH = row.FULLPATH
-            xml = '    <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
+            xml = '        <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
             return xml
 
-        res = ' '.join(df.apply(row_to_xml, axis=1))
+        res = ''.join(df.apply(row_to_xml, axis=1))
         return res
     # РАБОТАЕМ С ГРУППАМИ
     # посмотрим на дубли кодов
@@ -138,15 +138,26 @@ def workWithGroups(dfGroups):
 
 def workWithItems(dfItems):
     def GOODS_xml_header():
-        header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-        '<DATAPACKET Version="2.0">\n    <METADATA>\n        <FIELDS>\n'
-        '            <FIELD attrname="CODE" fieldtype="i4"/>\n'
-        '            <FIELD attrname="PARENT" fieldtype="i4"/>\n'
-        '            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="100"/>\n'
-        '            <FIELD attrname="CCOUNT" fieldtype="i4"/>'
-        '            <FIELD attrname="FULLPATH" fieldtype="string.uni" WIDTH="16382"/>'
-        '            <FIELD attrname="EXTRA" fieldtype="fixed" DECIMALS="3" WIDTH="32"/>'
-        '        </FIELDS>\n        <PARAMS/>\n    </METADATA>\n    <ROWDATA>\n'
+        header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' \
+            '<DATAPACKET Version="2.0">\n    <METADATA>\n        <FIELDS>\n' \
+            '''            <FIELD attrname="KIND" fieldtype="i4"/>
+            <FIELD attrname="CODE" fieldtype="string.uni" WIDTH="40"/>
+            <FIELD attrname="NAME" fieldtype="string.uni" WIDTH="200"/>
+            <FIELD attrname="ABBREV" fieldtype="string.uni" WIDTH="34"/>
+            <FIELD attrname="EDIZM" fieldtype="string.uni" WIDTH="10"/>
+            <FIELD attrname="SECTION" fieldtype="i4"/>
+            <FIELD attrname="RETSECTION" fieldtype="i4"/>
+            <FIELD attrname="PRICE" fieldtype="fixed" DECIMALS="2" WIDTH="32"/>
+            <FIELD attrname="GROUP" fieldtype="i2"/>
+            <FIELD attrname="TAXINDEX" fieldtype="i2"/>
+            <FIELD attrname="NOTE" fieldtype="string.uni" WIDTH="200"/>
+            <FIELD attrname="NDS" fieldtype="fixed" DECIMALS="2" WIDTH="32"/>
+            <FIELD attrname="FIRM_ID" fieldtype="i4"/>
+            <FIELD attrname="SPECIAL_PRICE" fieldtype="boolean"/>
+            <FIELD attrname="COMPLEX" fieldtype="boolean"/>
+            <FIELD attrname="DISMISS" fieldtype="boolean"/>
+            <FIELD attrname="TAXATION" fieldtype="i2"/>''' \
+            '\n        </FIELDS>\n        <PARAMS/>\n    </METADATA>\n    <ROWDATA>\n'
         return header
 
     def GOODS_xml_ending():
@@ -155,27 +166,57 @@ def workWithItems(dfItems):
 
     def GOODS_row_to_xml(df):
         def row_to_xml(row):
-            CODE = row.CODE
-            PARENT = row.PARENT
-            NAME = htmlEntities(row.NAME)
-            CCOUNT = row.CCOUNT
-            FULLPATH = row.FULLPATH
-            xml = '    <ROW CODE="{0}" PARENT="{1}" NAME="{2}" CCOUNT="{3}" FULLPATH="{4}"/>\n'.format(CODE, PARENT, NAME, CCOUNT, FULLPATH)
+            # KIND = row.KIND
+            # CODE = row.CODE
+            # NAME = htmlEntities(row.NAME)
+            # EDIZM = row.EDIZM
+            # SECTION = row.SECTION
+            xml = "    <ROW KIND='{KIND}' CODE='{CODE}' NAME='{NAME}' EDIZM='{EDIZM}' SECTION='{SECTION}' \
+                RETSECTION='{RETSECTION}' PRICE='{PRICE}' GROUP='{GROUP}' TAXINDEX='{TAXINDEX}' \
+                SPECIAL_PRICE='{SPECIAL_PRICE}' COMPLEX='{COMPLEX}' DISMISS='{DISMISS}' TAXATION='{TAXATION}'/>\n \
+                ".format(KIND=row.KIND, CODE=row.CODE, NAME=htmlEntities(row.NAME), EDIZM=htmlEntities(row.EDIZM),
+                         SECTION=row.SECTION, RETSECTION=row.RETSECTION, PRICE=row.PRICE, GROUP=row.GROUP,
+                         TAXINDEX=row.TAXINDEX, SPECIAL_PRICE=row.SPECIAL_PRICE, COMPLEX=row.COMPLEX,
+                         DISMISS=row.DISMISS, TAXATION=row.TAXATION)
             return xml
 
-        res = ' '.join(df.apply(row_to_xml, axis=1))
+        res = ''.join(df.apply(row_to_xml, axis=1))
         return res
 
-    return 0
+    # dfItems.drop(columns=['Тип', 'Ед.изм', 'Вес ед. изм', 'Цена', 'Категория'], inplace=True)
+    dfItems["KIND"] = "0"
+    dfItems.rename(index=str, columns={
+        "Код": "CODE",
+        "Наименование": "NAME",
+        "Ед.изм": "EDIZM",
+
+        "Код группы": "GROUP"}, inplace=True)
+
+    dfItems["SECTION"] = "0"
+    dfItems["RETSECTION"] = "0"
+    dfItems["PRICE"] = "0.00"
+
+    dfItems["TAXINDEX"] = "0"  # не нужен
+    dfItems["SPECIAL_PRICE"] = "FALSE"  # не нужен
+    dfItems["COMPLEX"] = "FALSE"  # ЭТО СОСТАВНОЙ ТОВАР - у него нет остатков!!! и списываются составные части
+    dfItems["DISMISS"] = "FALSE"  # списывать при возврате! - типа кофе (составной товар) чтоли?
+    dfItems["TAXATION"] = "0"  # для составного товара "8"???
+
+    return GOODS_xml_header() + GOODS_row_to_xml(dfItems) + GOODS_xml_ending()
 
 
 def main():
     dfGroups, dfItems = readIikoCsv()
-    SHGROUPS_xml = workWithGroups(dfGroups)
+
+    # SHGROUPS_xml = workWithGroups(dfGroups)
+
+    # with open("./DATA/SHGROUPS_.XML", 'w') as f:
+    #     f.write(SHGROUPS_xml)
+
     GOODS_xml = workWithItems(dfItems)
 
-    with open("./DATA/SHGROUPS.XML", 'w') as f:
-        f.write(SHGROUPS_xml)
+    with open("./DATA/GOODS_.XML", 'w') as f:
+        f.write(GOODS_xml)
     # print(dfGroups)
 
 
