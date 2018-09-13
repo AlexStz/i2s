@@ -27,8 +27,8 @@ def htmlEntities(string):
 
 
 def readIikoCsv():
-    df = pd.read_csv("./DATA/goods.csv", delimiter=";", decimal=",", header=0,
-                     converters={u'Код': convert2int32, u'Код группы': convert2int32},
+    df = pd.read_csv("./DATA/goods.csv", delimiter=";", decimal=",", header=0, low_memory=False,
+                     converters={u'Код группы': convert2int32},
                      usecols=[u'Тип', u'Код', u'Код группы', u'Наименование', u'Ед.изм', u'Вес ед. изм', u'Цена',
                               u'Категория'])
     # dtypess = df.dtypes
@@ -39,6 +39,7 @@ def readIikoCsv():
 
     # print(sl)
     dfGroups = df[df[u'Тип'] == u"Группа"].fillna(0)  # это выборка групп
+    dfGroups["Код"] = dfGroups["Код"].apply(convert2int32)
     dfItems = df[df[u'Тип'] != u"Группа"]  # это выборка товаров
     return dfGroups, dfItems
 
@@ -171,13 +172,26 @@ def workWithItems(dfItems):
             # NAME = htmlEntities(row.NAME)
             # EDIZM = row.EDIZM
             # SECTION = row.SECTION
-            xml = "    <ROW KIND='{KIND}' CODE='{CODE}' NAME='{NAME}' EDIZM='{EDIZM}' SECTION='{SECTION}' \
-                RETSECTION='{RETSECTION}' PRICE='{PRICE}' GROUP='{GROUP}' TAXINDEX='{TAXINDEX}' \
-                SPECIAL_PRICE='{SPECIAL_PRICE}' COMPLEX='{COMPLEX}' DISMISS='{DISMISS}' TAXATION='{TAXATION}'/>\n \
-                ".format(KIND=row.KIND, CODE=row.CODE, NAME=htmlEntities(row.NAME), EDIZM=htmlEntities(row.EDIZM),
-                         SECTION=row.SECTION, RETSECTION=row.RETSECTION, PRICE=row.PRICE, GROUP=row.GROUP,
-                         TAXINDEX=row.TAXINDEX, SPECIAL_PRICE=row.SPECIAL_PRICE, COMPLEX=row.COMPLEX,
-                         DISMISS=row.DISMISS, TAXATION=row.TAXATION)
+            KIND = row.KIND
+            CODE = row.CODE
+            NAME = htmlEntities(row.NAME)
+            EDIZM = htmlEntities(row.EDIZM)
+            SECTION = row.SECTION
+            # RETSECTION = row.RETSECTION
+            PRICE = row.PRICE
+            GROUP = row.GROUP
+            TAXINDEX = row.TAXINDEX
+            SPECIAL_PRICE = row.SPECIAL_PRICE
+            COMPLEX = row.COMPLEX
+            DISMISS = row.DISMISS
+            # TAXATION = row.TAXATION
+            # xml = f'    <ROW KIND="{KIND}" CODE="{CODE}" NAME="{NAME}" EDIZM="{EDIZM}" SECTION="{SECTION}"\
+            #     RETSECTION="{RETSECTION}" PRICE="{PRICE}" GROUP="{GROUP}" TAXINDEX="{TAXINDEX}"\
+            #     SPECIAL_PRICE="{SPECIAL_PRICE}" COMPLEX="{COMPLEX}" DISMISS="{DISMISS}" TAXATION="{TAXATION}"\
+            #     />\n'
+            xml = f'    <ROW KIND="{KIND}" CODE="{CODE}" NAME="{NAME}" EDIZM="{EDIZM}" SECTION="{SECTION}"\
+ PRICE="{PRICE}" GROUP="{GROUP}" TAXINDEX="{TAXINDEX}"\
+ SPECIAL_PRICE="{SPECIAL_PRICE}" COMPLEX="{COMPLEX}" DISMISS="{DISMISS}"/>\n'
             return xml
 
         res = ''.join(df.apply(row_to_xml, axis=1))
@@ -201,17 +215,22 @@ def workWithItems(dfItems):
     dfItems["COMPLEX"] = "FALSE"  # ЭТО СОСТАВНОЙ ТОВАР - у него нет остатков!!! и списываются составные части
     dfItems["DISMISS"] = "FALSE"  # списывать при возврате! - типа кофе (составной товар) чтоли?
     dfItems["TAXATION"] = "0"  # для составного товара "8"???
-
+    duplicates = dfItems[dfItems.duplicated(keep=False, subset=u'CODE') == True].sort_values(by=u'CODE')
+    if len(duplicates) is not 0:
+        print("Посмотрим на дубли GOODS:")
+        print(duplicates)
+        print("...дубли закончились. Выход.")
+        exit
     return GOODS_xml_header() + GOODS_row_to_xml(dfItems) + GOODS_xml_ending()
 
 
 def main():
     dfGroups, dfItems = readIikoCsv()
 
-    # SHGROUPS_xml = workWithGroups(dfGroups)
+    SHGROUPS_xml = workWithGroups(dfGroups)
 
-    # with open("./DATA/SHGROUPS_.XML", 'w') as f:
-    #     f.write(SHGROUPS_xml)
+    with open("./DATA/SHGROUPS_.XML", 'w') as f:
+        f.write(SHGROUPS_xml)
 
     GOODS_xml = workWithItems(dfItems)
 
