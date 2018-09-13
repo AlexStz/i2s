@@ -214,7 +214,7 @@ def workWithItems(dfItems):
     dfItems["SPECIAL_PRICE"] = "FALSE"  # не нужен
     dfItems["COMPLEX"] = "FALSE"  # ЭТО СОСТАВНОЙ ТОВАР - у него нет остатков!!! и списываются составные части
     dfItems["DISMISS"] = "FALSE"  # списывать при возврате! - типа кофе (составной товар) чтоли?
-    dfItems["TAXATION"] = "0"  # для составного товара "8"???
+    # dfItems["TAXATION"] = "0"  # для составного товара "8"???
     duplicates = dfItems[dfItems.duplicated(keep=False, subset=u'CODE') == True].sort_values(by=u'CODE')
     if len(duplicates) is not 0:
         print("Посмотрим на дубли GOODS:")
